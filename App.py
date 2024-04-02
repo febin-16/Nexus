@@ -2,6 +2,7 @@ import torch
 from flask import Flask, request, jsonify
 import torch.nn as nn
 import numpy as np
+
 app = Flask(__name__)
 
 # Define the LSTM model class
@@ -49,13 +50,18 @@ def predict_lstm():
     try:
         data = request.get_json()
         input_data = np.array(data["input"])  # Assuming input is provided in JSON format
-        input_tensor = torch.from_numpy(input_data).to(device).float()
+        input_tensor = torch.from_numpy(input_data).unsqueeze(0).unsqueeze(0).float()  # Add batch and sequence dimensions
 
+        # Initialize the hidden state
+        batch_size = input_tensor.size(0)
+        hidden = lstm_model.init_hidden(batch_size)
+
+        # Make prediction
         with torch.no_grad():
-            output = lstm_model(input_tensor)
+            output, _ = lstm_model(input_tensor, hidden)
 
-        # Process the output as needed
-        prediction = output.tolist()
+        # Process the output
+        prediction = output.item()
 
         return jsonify({"prediction": prediction})
     except Exception as e:
